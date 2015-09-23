@@ -22,6 +22,6 @@
 		"ext-curl": "*"
 	},
 	"autoload": {
-		"classmap": ["paylane/PayLaneRestClient.php"]
+		"classmap": ["PayLane/RestClient.php"]
 	}
 }

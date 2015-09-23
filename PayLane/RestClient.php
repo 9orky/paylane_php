@@ -1,26 +1,39 @@
 <?php
 
+namespace PayLane;
+
+use PayLane\Exception\ApiHttpCallException;
+use PayLane\Exception\ApiServerConnectionException;
+use PayLane\Exception\ExtensionMissingException;
+
 /**
  * Client library for Paylane REST Server.
  * More info at http://devzone.paylane.com
  */
-class PayLaneRestClient
+class RestClient
 {
-    /**
-     * @var string
-     */
-    protected $api_url = 'https://direct.paylane.com/rest/';
+
+    const DEFAULT_API_URL = 'https://direct.paylane.com/rest/';
 
     /**
-     * @var string
+     * @var
      */
-    protected $username = null, $password = null;
+    private $apiUrl;
+
+    /**
+     * @var null|string
+     */
+    private $username = null;
+
+    /**
+     * @var null|string
+     */
+    private $password = null;
 
     /**
      * @var array
      */
-    protected $http_errors = array
-    (
+    private $httpErrors = array(
         400 => '400 Bad Request',
         401 => '401 Unauthorized',
         500 => '500 Internal Server Error',
@@ -33,60 +46,45 @@ class PayLaneRestClient
     /**
      * @var bool
      */
-    protected $is_success = false;
+    private $isSuccess = false;
 
     /**
      * @var array
      */
-    protected $allowed_request_methods = array(
-        'get',
-        'put',
-        'post',
-        'delete',
-    );
+    private $allowedRequestMethods = array('GET', 'PUT', 'POST', 'DELETE');
 
     /**
      * @var boolean
      */
-    protected $ssl_verify = true;
-    
+    private $sslVerify = true;
+
     /**
-     * Constructor
-     * 
-     * @param string $username Username
-     * @param string $password Password
+     * @param $username
+     * @param $password
+     * @param string $apiUrl
+     * @throws ExtensionMissingException
      */
-    public function __construct($username, $password)
+    public function __construct($username, $password, $apiUrl = self::DEFAULT_API_URL)
     {
         $this->username = $username;
         $this->password = $password;
-        
-        $validate_params = array
-        (
-            false === extension_loaded('curl') => 'The curl extension must be loaded for using this class!',
-            false === extension_loaded('json') => 'The json extension must be loaded for using this class!'
-        );
-        $this->checkForErrors($validate_params);
+        $this->apiUrl = $apiUrl;
+
+        if (false === extension_loaded('curl')) {
+            throw new ExtensionMissingException('The curl extension must be loaded for using this class!');
+        }
+
+        if (false === extension_loaded('json')) {
+            throw new ExtensionMissingException('The json extension must be loaded for using this class!');
+        }
     }
 
     /**
-     * Set Api URL
-     * 
-     * @param string $url Api URL
+     * @param $sslVerify
      */
-    public function setUrl($url)
+    public function setSslVerify($sslVerify)
     {
-        $this->api_url = $url;
-    }
-    
-    /**
-     * Sets SSL verify
-     * 
-     * @param bool $ssl_verify SSL verify
-     */
-    public function setSSLverify($ssl_verify)
-    {
-        $this->ssl_verify = $ssl_verify;
+        $this->sslVerify = $sslVerify;
     }
     
     /**
@@ -96,7 +94,7 @@ class PayLaneRestClient
      */
     public function isSuccess()
     {
-        return $this->is_success;
+        return $this->isSuccess;
     }
 
     /**
@@ -109,7 +107,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'cards/sale',
-            'post',
+            'POST',
              $params
         );
     }
@@ -124,7 +122,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'cards/saleByToken',
-            'post',
+            'POST',
              $params
         );
     }
@@ -139,7 +137,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'cards/authorization',
-            'post',
+            'POST',
             $params
         );
     }
@@ -154,7 +152,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'cards/authorizationByToken',
-            'post',
+            'POST',
             $params
         );
     }
@@ -169,7 +167,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'paypal/authorization',
-            'post',
+            'POST',
             $params
         );
     }
@@ -184,7 +182,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'authorizations/capture',
-            'post',
+            'POST',
             $params
         );
     }
@@ -199,7 +197,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'authorizations/close',
-            'post',
+            'POST',
             $params
         );
     }
@@ -214,7 +212,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'refunds',
-            'post',
+            'POST',
             $params
         );
     }
@@ -229,7 +227,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'sales/info',
-            'get',
+            'GET',
             $params
         );
     }
@@ -244,7 +242,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'authorizations/info',
-            'get',
+            'GET',
             $params
         );
     }
@@ -259,7 +257,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'sales/status',
-            'get',
+            'GET',
             $params
         );
     }
@@ -274,7 +272,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'directdebits/sale',
-            'post',
+            'POST',
             $params
         );
     }
@@ -289,7 +287,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'sofort/sale',
-            'post',
+            'POST',
             $params
         );
     }
@@ -305,7 +303,7 @@ class PayLaneRestClient
         return $this->call(
             'ideal/sale',
             'post',
-            $params
+            (array) $params
         );
     }
 
@@ -318,7 +316,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'ideal/bankcodes',
-            'get',
+            'GET',
             array()
         );
     }
@@ -407,7 +405,7 @@ class PayLaneRestClient
     {
         return $this->call(
             '3DSecure/checkCard',
-            'get',
+            'GET',
             $params
         );
     }
@@ -422,7 +420,7 @@ class PayLaneRestClient
     {
         return $this->call(
             '3DSecure/checkCardByToken',
-            'get',
+            'GET',
             $params
         );
     }
@@ -452,7 +450,7 @@ class PayLaneRestClient
     {
         return $this->call(
             'cards/check',
-            'get',
+            'GET',
             $params
         );
     }
@@ -467,121 +465,76 @@ class PayLaneRestClient
     {
         return $this->call(
             'cards/checkByToken',
-            'get',
+            'GET',
             $params
         );
     }
 
     /**
-     * Method responsible for preparing, setting state and returning answer from rest server
-     *
-     * @param string $method
-     * @param string $request
+     * @param $url
+     * @param $requestMethod
      * @param array $params
-     * @return array
+     * @return mixed
+     * @throws ApiHttpCallException
+     * @throws ApiServerConnectionException
      */
-    protected function call($method, $request, $params)
+    protected function call($url, $requestMethod, array $params)
     {
-        $this->is_success = false;
+        $this->isSuccess = false;
 
-        if (is_object($params))
-        {
-            $params = (array) $params;
-        }
+        $this->checkRequestMethod($requestMethod);
         
-        $validate_params = array
-        (
-            false === is_string($method) => 'Method name must be string',
-            false === $this->checkRequestMethod($request) => 'Not allowed request method type',
-        );
-
-        $this->checkForErrors($validate_params);
-
-        $params_encoded = json_encode($params);
-        
-        $response = $this->pushData($method, $request, $params_encoded);
-
+        $response = $this->pushData($url, $requestMethod, json_encode($params));
         $response = json_decode($response, true);
 
-        if (isset($response['success']) && $response['success'] === true)
-        {
-            $this->is_success = true;
+        if (isset($response['success']) && $response['success']) {
+            $this->isSuccess = true;
         }
 
         return $response;
     }
 
     /**
-     * Checking error mechanism
-     *
-     * @param array $validate_params
-     * @throws \Exception
-     */
-    protected function checkForErrors($validate_params)
-    {
-        foreach ($validate_params as $key => $error)
-        {
-            if ($key)
-            {
-                throw new \Exception($error);
-            }
-        }
-    }
-
-    /**
-     * Check if method is allowed
-     *
-     * @param string $method_type
+     * @param $requestMethod
      * @return bool
      */
-    protected function checkRequestMethod($method_type)
+    protected function checkRequestMethod($requestMethod)
     {
-        $request_method = strtolower($method_type);
-
-        if(in_array($request_method, $this->allowed_request_methods))
-        {
-            return true;
-        }
-
-        return false;
+        return in_array(strtoupper($requestMethod), $this->allowedRequestMethods, true);
     }
 
     /**
-     * Method responsible for pushing data to REST server
-     *
-     * @param string $method
-     * @param string $method_type
-     * @param string $request - JSON
-     * @return array
-     * @throws \Exception
+     * @param $url
+     * @param $requestMethod
+     * @param $requestParams
+     * @return mixed
+     * @throws ApiHttpCallException
+     * @throws ApiServerConnectionException
      */
-    protected function pushData($method, $method_type, $request)
+    protected function pushData($url, $requestMethod, $requestParams)
     {
         $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, $this->api_url . $method);
+        curl_setopt($ch, CURLOPT_URL, $this->apiUrl . $url);
         curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $request);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $requestParams);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-type: application/json'));
         curl_setopt($ch, CURLOPT_ENCODING, 'gzip,deflate');
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method_type));
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $requestMethod);
         curl_setopt($ch, CURLOPT_HTTPAUTH, 1);
         curl_setopt($ch, CURLOPT_USERPWD, $this->username . ':' . $this->password);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $this->ssl_verify);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $this->sslVerify);
         
         $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        if (isset($this->http_errors[$http_code]))
-        {
-            throw new \Exception('Response Http Error - ' . $this->http_errors[$http_code]);
+        if (isset($this->httpErrors[$httpCode])) {
+            throw new ApiHttpCallException("API responded with an error: [{$httpCode}] $this->httpErrors[$httpCode]");
         }
 
-        if (0 < curl_errno($ch))
-        {
-            throw new \Exception('Unable to connect to ' . $this->api_url . ' Error: ' . curl_error($ch));
+        if (0 < curl_errno($ch)) {
+            throw new ApiServerConnectionException("API Server at: {$this->apiUrl} seems to be away");
         }
 
         curl_close($ch);
